@@ -58,7 +58,7 @@ async function generateReply({ recentMessages, summary, instruction }) {
 
       if (!response.ok) {
         const bodyText = await response.text().catch(() => "");
-        throw new Object.assign(new Error(`OpenRouter error: ${response.status}`), {
+        throw Object.assign(new Error(`OpenRouter error: ${response.status}`), {
           fatal: true,
           body: bodyText,
         });
@@ -68,7 +68,7 @@ async function generateReply({ recentMessages, summary, instruction }) {
       const text = data?.choices?.[0]?.message?.content;
 
       if (!text || typeof text !== "string") {
-        throw new Object.assign(new Error("Malformed AI response: no content"), { fatal: true });
+        throw Object.assign(new Error("Malformed AI response: no content"), { fatal: true });
       }
 
       return text.trim();
