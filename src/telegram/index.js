@@ -27,6 +27,15 @@ async function connect() {
   targetEntity = await client.getEntity(config.telegram.targetUsername);
 
   console.log("Telegram connected");
+  console.log(
+    `[DEBUG] Logged in as: id=${selfId}, username=${me.username || "(none)"}, phone=${me.phone || "(none)"}`
+  );
+  console.log(
+    `[DEBUG] Target username config: "${config.telegram.targetUsername}"`
+  );
+  console.log(
+    `[DEBUG] Resolved target entity: id=${targetEntity.id ? targetEntity.id.toString() : "(none)"}, className=${targetEntity.className}, username=${targetEntity.username || "(none)"}, firstName=${targetEntity.firstName || "(none)"}`
+  );
   return client;
 }
 
@@ -34,16 +43,34 @@ function onMessage(handler) {
   client.addEventHandler(async (event) => {
     try {
       const message = event.message;
-      if (!message) return;
+      if (!message) {
+        console.log("[DEBUG] Event fired but no message object present:", JSON.stringify(event, null, 2).slice(0, 500));
+        return;
+      }
 
-      // Ignore messages we sent ourselves (prevents self-message loop)
-      if (message.out) return;
-      if (message.senderId && message.senderId.toString() === selfId) return;
-
-      // Only react to messages from the configured target conversation
+      const senderId = message.senderId ? message.senderId.toString() : null;
       const chatId = message.chatId ? message.chatId.toString() : null;
       const targetId = targetEntity.id ? targetEntity.id.toString() : null;
-      if (chatId && targetId && chatId !== targetId) return;
+
+      console.log(
+        `[DEBUG] Event received: out=${message.out}, senderId=${senderId}, chatId=${chatId}, targetId=${targetId}, text="${(message.message || "").slice(0, 50)}"`
+      );
+
+      // Ignore messages we sent ourselves (prevents self-message loop)
+      if (message.out) {
+        console.log("[DEBUG] Ignored: message.out is true (this is an outgoing message)");
+        return;
+      }
+      if (senderId && senderId === selfId) {
+        console.log("[DEBUG] Ignored: senderId matches our own id");
+        return;
+      }
+
+      // Only react to messages from the configured target conversation
+      if (chatId && targetId && chatId !== targetId) {
+        console.log(`[DEBUG] Ignored: chatId (${chatId}) does not match targetId (${targetId})`);
+        return;
+      }
 
       console.log("Received message");
       await handler(message);
