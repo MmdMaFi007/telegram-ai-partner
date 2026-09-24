@@ -1,0 +1,21 @@
+{
+  "name": "telegram-ai-partner",
+  "version": "1.0.0",
+  "description": "Personal AI companion over a Telegram user account, powered by OpenRouter",
+  "main": "src/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/main.js",
+    "generate-session": "node scripts/generate_session.js"
+  },
+  "dependencies": {
+    "telegram": "^2.24.11",
+    "input": "^1.0.1",
+    "express": "^4.19.2",
+    "node-cron": "^3.0.3",
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
