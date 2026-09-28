@@ -23,11 +23,26 @@ const config = {
   openrouter: {
     apiKey: requireEnv("OPENROUTER_API_KEY"),
     model: requireEnv("OPENROUTER_MODEL"),
+    // برای مدل‌های reasoning‌دار (مثل space-bunny-alpha): سقف کل توکن‌ها (فکر + جواب)
+    maxTokens: parseInt(optionalEnv("MAX_OUTPUT_TOKENS", "1000"), 10),
+    // none | minimal | low | medium | high ؛ خالی = پارامتر reasoning اصلاً فرستاده نشه
+    reasoningEffort: optionalEnv("REASONING_EFFORT", "low"),
   },
   proactive: {
     enabled: optionalEnv("PROACTIVE_ENABLED", "true") === "true",
-    minIntervalMinutes: parseInt(optionalEnv("MIN_PROACTIVE_INTERVAL_MINUTES", "5"), 10),
-    maxIntervalMinutes: parseInt(optionalEnv("MAX_PROACTIVE_INTERVAL_MINUTES", "8"), 10),
+    minIntervalMinutes: parseInt(optionalEnv("MIN_PROACTIVE_INTERVAL_MINUTES", "90"), 10),
+    maxIntervalMinutes: parseInt(optionalEnv("MAX_PROACTIVE_INTERVAL_MINUTES", "180"), 10),
+    maxConsecutive: parseInt(optionalEnv("MAX_CONSECUTIVE_PROACTIVE", "2"), 10),
+    quietStartHour: parseInt(optionalEnv("QUIET_START_HOUR", "1"), 10), // به وقت تهران
+    quietEndHour: parseInt(optionalEnv("QUIET_END_HOUR", "8"), 10),
+  },
+  style: {
+    // احتمال اینکه ایموجی (حداکثر یکی) تو پیام بمونه؛ 0 = هیچ‌وقت، 1 = همیشه
+    emojiChance: parseFloat(optionalEnv("EMOJI_CHANCE", "0.3")),
+  },
+  reply: {
+    // صبر می‌کنه تا اگه محمد چند پیام پشت‌سرهم فرستاد، یه جواب بده
+    debounceMs: parseInt(optionalEnv("REPLY_DEBOUNCE_MS", "3500"), 10),
   },
   server: {
     port: parseInt(optionalEnv("PORT", "3000"), 10),

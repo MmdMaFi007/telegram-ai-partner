@@ -46,7 +46,7 @@ TELEGRAM_API_ID=xxxx TELEGRAM_API_HASH=xxxx npm run generate-session
    - `TELEGRAM_API_HASH`
    - `TELEGRAM_SESSION` (از مرحله ۱)
    - `OPENROUTER_API_KEY`
-   - `OPENROUTER_MODEL` (مثلاً `openai/gpt-4o-mini` یا هر مدلی که در OpenRouter فعال است)
+   - `OPENROUTER_MODEL` (مثلاً `stealth/space-bunny-alpha` یا هر مدلی که در OpenRouter فعال است)
    - `TARGET_USERNAME=mhmd59`
    - `PROACTIVE_ENABLED=true`
    - `MIN_PROACTIVE_INTERVAL_MINUTES=5`

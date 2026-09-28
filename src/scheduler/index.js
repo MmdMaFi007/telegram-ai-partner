@@ -12,6 +12,24 @@ function randomIntervalMs() {
 
 let timer = null;
 
+function tehranHour() {
+  const h = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hour12: false, timeZone: "Asia/Tehran" }).format(new Date());
+  return parseInt(h, 10) % 24;
+}
+
+function inQuietHours() {
+  const { quietStartHour: s, quietEndHour: e } = config.proactive;
+  const h = tehranHour();
+  return s <= e ? h >= s && h < e : h >= s || h < e;
+}
+
+// چند پیام آخر پشت‌سرهم مال خودشه (محمد جواب نداده)؟
+function trailingAssistantCount(messages) {
+  let n = 0;
+  for (let i = messages.length - 1; i >= 0 && messages[i].role === "assistant"; i--) n++;
+  return n;
+}
+
 function scheduleNextCheck() {
   const delay = randomIntervalMs();
   timer = setTimeout(tick, delay);
@@ -36,6 +54,9 @@ async function maybeSendProactiveMessage() {
   // Never sent anything yet — wait for a real interaction first.
   if (!lastInteractionAt) return;
 
+  if (inQuietHours()) return; // نصفه‌شب پیام نده
+  if (trailingAssistantCount(recentMessages) >= config.proactive.maxConsecutive) return; // پشت‌سرهم پیام نده
+
   const silenceMs = now - lastInteractionAt;
   if (silenceMs < minGapMs) return; // not silent long enough yet
 
@@ -43,7 +64,7 @@ async function maybeSendProactiveMessage() {
   if (lastProactiveAt && now - lastProactiveAt < minGapMs) return;
 
   const instruction =
-    "مدتیه پیامی نگرفتی. یک پیام کوتاه و طبیعی به‌عنوان پیگیری بفرست، انگار دلت براش تنگ شده یا کنجکاوی که چیکار می‌کنه. تکراری یا کلیشه‌ای ننویس، به context قبلی توجه کن.";
+    "مدتیه پیامی نگرفتی. یه پیام خیلی کوتاه (یک خط) بفرست، انگار دلت براش تنگ شده یا کنجکاوی چیکار می‌کنه. تکراری یا کلیشه‌ای ننویس، به context قبلی توجه کن.";
 
   const reply = await ai.generateReply({ recentMessages, summary, instruction });
   if (!reply) return; // AI failed after retries; skip this cycle silently

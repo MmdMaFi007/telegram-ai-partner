@@ -1,5 +1,6 @@
 const config = require("../config");
-const { buildSystemPrompt } = require("../personality");
+const { buildSystemPrompt, styleReminder } = require("../personality");
+const { sanitizeReply } = require("../postprocess");
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MAX_RETRIES = 3;
@@ -26,9 +27,8 @@ async function generateReply({ recentMessages, summary, instruction }) {
     })),
   ];
 
-  if (instruction) {
-    messages.push({ role: "system", content: instruction });
-  }
+  // یادآوری سبک (و دستور proactive در صورت وجود) آخر پیام‌ها، تا اثرش بیشتر باشه
+  messages.push({ role: "system", content: [instruction, styleReminder].filter(Boolean).join("\n") });
 
   let lastError;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -45,7 +45,13 @@ async function generateReply({ recentMessages, summary, instruction }) {
         body: JSON.stringify({
           model: config.openrouter.model,
           messages,
-          max_tokens: 500,
+          // برای مدل‌های reasoning‌دار، max_tokens شامل توکن‌های «فکر کردن» هم می‌شه؛
+          // سقف کم باعث جواب خالی می‌شه. طول جواب رو پرامپت + postprocess کنترل می‌کنن.
+          max_tokens: config.openrouter.maxTokens,
+          temperature: 0.95,
+          ...(config.openrouter.reasoningEffort
+            ? { reasoning: { effort: config.openrouter.reasoningEffort, exclude: true } }
+            : {}),
         }),
         signal: controller.signal,
       });
@@ -66,12 +72,20 @@ async function generateReply({ recentMessages, summary, instruction }) {
 
       const data = await response.json();
       const text = data?.choices?.[0]?.message?.content;
+      const finishReason = data?.choices?.[0]?.finish_reason;
+      if ((!text || !String(text).trim()) && finishReason === "length") {
+        console.error("Empty reply: reasoning ate the token budget. Raise MAX_OUTPUT_TOKENS or lower REASONING_EFFORT.");
+      }
 
       if (!text || typeof text !== "string") {
         throw Object.assign(new Error("Malformed AI response: no content"), { fatal: true });
       }
 
-      return text.trim();
+      const cleaned = sanitizeReply(text, { emojiChance: config.style.emojiChance });
+      if (!cleaned) {
+        throw Object.assign(new Error("Empty reply after sanitizing"), { fatal: true });
+      }
+      return cleaned;
     } catch (err) {
       lastError = err;
       if (err.fatal || attempt === MAX_RETRIES) break;
